@@ -1,0 +1,192 @@
+/* ================================
+   COLORS
+   ================================ */
+
+:root {
+  --primary-blue: #2563eb;
+  --primary-dark: #0f172a;
+  --accent-orange: #f97316;
+  --success-green: #16a34a;
+  --danger-red: #dc2626;
+  --border-gray: #e5e7eb;
+}
+
+/* ================================
+   BODY & TYPOGRAPHY
+   ================================ */
+
+body {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+h1 {
+  font-size: 2.2rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.6rem;
+  margin-top: 2.2rem;
+  margin-bottom: 0.75rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin-top: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ================================
+   NAVBAR
+   ================================ */
+
+.navbar {
+  background-color: var(--primary-dark) !important;
+  border-bottom: 1px solid #1e293b;
+  box-shadow: none !important;
+}
+
+.navbar-brand,
+.navbar-nav .nav-link {
+  color: #f8fafc !important;
+  font-weight: 500;
+}
+
+.navbar-brand:hover,
+.navbar-nav .nav-link:hover {
+  color: var(--accent-orange) !important;
+}
+
+/* ================================
+   TABLES
+   ================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-gray);
+}
+
+table thead {
+  background-color: var(--primary-dark);
+  color: #fff;
+}
+
+table th, table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-gray);
+}
+
+table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* ================================
+   CODE BLOCKS
+   ================================ */
+
+pre code {
+  font-size: 0.9rem;
+  border-radius: 10px;
+  padding: 1rem;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+code {
+  background-color: #0f172a;
+  color: #93c5fd;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* ================================
+   CALLOUTS
+   ================================ */
+
+.callout {
+  border-left-width: 6px !important;
+  border-radius: 12px;
+}
+
+.callout-title-container {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.callout-note {
+  border-color: var(--primary-blue) !important;
+}
+
+.callout-tip {
+  border-color: var(--success-green) !important;
+}
+
+.callout-warning {
+  border-color: var(--accent-orange) !important;
+}
+
+.callout-important {
+  border-color: var(--danger-red) !important;
+}
+
+/* ================================
+   IMAGES
+   ================================ */
+
+img {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  margin-bottom: 1rem;
+}
+
+/* ================================
+   LINKS
+   ================================ */
+
+a {
+  color: var(--primary-blue);
+  font-weight: 500;
+}
+
+a:hover {
+  color: var(--accent-orange);
+}
+
+pre {
+  background-color: #f3f4f6;     
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  color: #111827;                
+  font-size: 0.95rem;
+  overflow-x: auto;
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;                     
+}
+
+/* === Left-align tables + Darker Header === */
+
+table {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+table thead {
+  background-color: #0a0f1a !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}

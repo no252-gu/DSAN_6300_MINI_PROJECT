@@ -1,0 +1,26 @@
+project:
+  type: website
+
+website:
+  title: "DSAN 6300 PROJECT"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: analysis.qmd
+        text: Analysis
+      - about.qmd
+
+format:
+  html:
+    theme:
+      - cosmo
+    css: styles.css
+    toc: true
+    code-fold: true
+    code-summary: "Code"
+    fig-width: 10
+    fig-height: 6
+
+
+

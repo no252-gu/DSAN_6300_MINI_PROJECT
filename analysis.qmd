@@ -1,0 +1,522 @@
+---
+title: "Analysis of Flight Data"
+author: "Nkemdibe Okweye"
+date: today
+format:
+  html:
+    embed-resources: true
+    code-fold: true
+    toc: true
+    toc-depth: 2
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(plotly)
+```
+
+
+# Section 1: System Volume
+
+```{r daily-patterns}
+daily_flights <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem07.csv",
+                          show_col_types = FALSE,
+                          na = c("", "NA", "NULL")) 
+
+daily_flights <- daily_flights %>%
+  mutate(
+    FlightDate = as.Date(FlightDate),
+    NumFlights = as.numeric(NumFlights),
+    AvgFlights_Preceding3Days = as.numeric(AvgFlights_Preceding3Days)
+  )
+
+# daily_flights
+# str(daily_flights)
+# summary(daily_flights)
+
+```
+
+![](Photos/top%20reasons%20for%20flight%20delays.jpg){width=90% fig-align="center"}
+
+## Summary Stats for April Flights
+
+```{r}
+summary_table <- daily_flights %>%
+  summarise(
+    Total_Flights = sum(NumFlights, na.rm = TRUE),
+    Average_Flights_Per_Day = round(mean(NumFlights, na.rm = TRUE), 0),
+    Min_Daily_Flights = min(NumFlights, na.rm = TRUE),
+    Max_Daily_Flights = max(NumFlights, na.rm = TRUE)
+  )
+
+summary_table %>%
+  kbl(
+    col.names = c("Total Flights",
+                  "Average Flights per Day",
+                  "Min Daily Flights",
+                  "Max Daily Flights"),
+    align = c("c","c","c","c") 
+  ) %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+This summary table provides a high-level snapshot of system volume for April. With over 612,000 total flights and an average of roughly 19,700 flights per day.
+
+
+
+## Daily Flights vs 3-Day Rolling Average
+This visualization shows the overall flight activity throughout April and compares the daily flight counts to a 3-day rolling average.
+
+
+```{r}
+plot <- ggplot(daily_flights, aes(x = FlightDate)) +
+  geom_line(aes(y = NumFlights, color = "Daily Flights"), linewidth = 0.5) +
+  geom_line(aes(y = AvgFlights_Preceding3Days, color = "3-Day Avg"), linewidth = 0.5) +
+  scale_color_manual(values = c(
+    "Daily Flights" = "#1f77b4",  
+    "3-Day Avg"     = "#e15759" 
+  )) +
+  scale_y_continuous(
+    breaks = c(0, 10000, 20000, 30000),
+    expand = expansion(mult = c(0.10, 0.35))
+  ) +
+  labs(
+    x = "Date",
+    y = "Flights",
+    color = "",
+  ) +
+  theme_minimal()
+
+ggplotly(plot, tooltip = c("x", "y"))
+```
+
+::: {.callout-note icon=false}
+## Summary
+The number of flights through out april stay fairly stable around 20,000 flights per day. Daily flight counts fluctuate in a clear weekly pattern: weekday volumes are consistently higher, while weekends show noticeable dips, which explains the repeating troughs in the blue line. 
+:::
+
+## Flight Volume by Day of Week
+```{r day-of-week}
+# Load Problem 3 data: Flight counts by day of week
+day_patterns <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem03.csv",
+                         show_col_types = FALSE)
+
+# Create ordered factor for days
+day_patterns$DayOfWeek <- factor(day_patterns$DayOfWeek,
+                                 levels = c("Monday", "Tuesday", "Wednesday",
+                                           "Thursday", "Friday", "Saturday", "Sunday"))
+```
+
+This chart shows how flights were distributed across the week in April, revealing which days were the busiest and which saw lighter activity.
+
+```{r}
+ggplot(day_patterns, aes(x = DayOfWeek, y = NumFlights, fill = DayOfWeek)) +
+  geom_col(show.legend = FALSE, width = 0.65) +
+  geom_text(aes(label = comma(NumFlights)), 
+            vjust = -0.4, size = 4.2, fontface = "bold") +
+
+  # Modern, cohesive color palette
+  scale_fill_manual(values = c(
+    "Monday"    = "#4C72B0",
+    "Tuesday"   = "#55A868",
+    "Wednesday" = "#C44E52",
+    "Thursday"  = "#8172B3",
+    "Friday"    = "#CCB974",
+    "Saturday"  = "#64B5CD",
+    "Sunday"    = "#8C8C8C"
+  )) +
+
+  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.12))) +
+  
+  labs(
+    x = "Day of Week",
+    y = "Number of Flights"
+  ) +
+
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+```
+
+::: {.callout-note icon=false}
+## Key Findings
+
+- **Monday is the busiest day** with 106,575 flights, reflecting business travel patterns
+- **Saturday sees the lowest volume** at under 90,000 flights
+- **Weekly pattern is pronounced**: approximately 20% variation between peak and trough
+- The rolling average reveals consistent weekday strength with weekend pullbacks
+:::
+
+---
+
+# Section 2: Airline Performance
+
+This section examines the delays and early departures across different airlines.
+
+```{r}
+max_delays <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem01.csv",
+                       show_col_types = FALSE)
+```
+
+## Maximum Departure Delays
+
+The worst delays recorded for each airline.
+
+```{r}
+ggplot(max_delays, aes(x = reorder(Name, MaxDepDelay),
+                       y = MaxDepDelay)) +
+  geom_col(fill = "#C44E52", width = 0.7) + 
+  geom_text(aes(label = paste0(round(MaxDepDelay/60, 1), " hrs")),
+            hjust = -0.15, size = 3.6, fontface = "plain") +
+  
+  coord_flip() +
+  
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.12))
+  ) +
+  
+  labs(
+    x = "",
+    y = "Maximum Delay (minutes)"
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(face = "bold", size = 11)
+  )
+
+
+```
+
+### Top 5 Airlines by Maximum Delay
+```{r max-delay-table}
+
+max_delays %>%
+  arrange(desc(MaxDepDelay)) %>%
+  mutate(
+    Hours = round(MaxDepDelay / 60, 1),
+    `Delay Time` = paste0(MaxDepDelay, " min (", Hours, " hrs)")
+  ) %>%
+  select(Name, `Delay Time`) %>%
+  head(5) %>%
+  kable(
+    col.names = c("Airline", "Delay Time"),
+    align = c("c", "c")
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE
+  )
+```
+
+## Maximum Early Departures
+
+While delays frustrate passengers, early departures can be equally problematic as passengers arriving at the scheduled time could miss their flights entirely.
+
+```{r early-departures}
+
+early_deps <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem02.csv",
+                       show_col_types = FALSE)
+
+ggplot(early_deps, aes(x = reorder(Name, EarlyDep),
+                       y = EarlyDep)) +
+  geom_col(fill = "#2ca02c", width = 0.7) +  
+  geom_text(aes(label = paste0(round(EarlyDep), " min")),
+            hjust = -0.15, size = 3.6, fontface = "plain") +
+  
+  coord_flip() +
+  
+  scale_y_continuous(
+    labels = comma,
+    expand = expansion(mult = c(0, 0.12))
+  ) +
+  
+  labs(
+    x = "",
+    y = "Early Departure (minutes)"
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(face = "bold", size = 11)
+  )
+
+
+```
+
+::: {.callout-warning icon=false}
+## Key Findings
+
+- **Maximum delay recorded: 2,620 minutes** (43.7 hours)—over 1.8 days!
+- **Multiple airlines had delays exceeding 24 hours**, suggesting mechanical issues or severe weather disruptions
+- **Early departures ranged up to 60 minutes**
+:::
+
+---
+
+# Section 3: Airport Performance
+
+This section identifies which airports struggle most with on-time performance.
+
+![](Photos/GettyImages-93466101.webp){width=90% fig-align="center"}
+
+## Worst Performing Airport Overall
+
+```{r worst-airport}
+worst_airport <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem04.csv",
+                          show_col_types = FALSE)
+
+worst_airport %>%
+  mutate(AverageDepDelay = round(AverageDepDelay, 2)) %>%
+  kable(
+    col.names = c("Airport Name & Location", "Code", "Average Delay (minutes)"),
+    align = c("l", "c", "c")
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    font_size = 14
+  ) %>%
+  row_spec(1, bold = TRUE, color = "red")
+
+```
+
+
+Every flight departing from this airport faces, on average, a 47-minute delay. This isn't an outlier problem; it's systemic.
+
+## Worst Airport for Each Airline
+This analysis reveals each carrier's most problematic airport.
+
+```{r airline-worst-airports}
+airline_worst <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem05.csv",
+                          show_col_types = FALSE)
+
+airline_worst %>%
+  arrange(desc(MaxAvgDepDelay)) %>%
+  head(5) %>%
+  mutate(MaxAvgDepDelay = round(MaxAvgDepDelay, 2)) %>%
+  kable(col.names = c("Airline", "Airport Name", "Avg Delay (min)"), align = c("c", "c", "c"),
+        caption = "<b>Top 5 Worst Airline–Airport Combinations</b>") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+```{r airline-delays-viz}
+
+airline_worst_top <- airline_worst %>%
+  arrange(desc(MaxAvgDepDelay)) %>%
+  head(15)
+
+airline_worst_top <- airline_worst_top %>%
+  mutate(AirportCode = sub(".*: ", "", AirportName))
+
+
+```
+
+```{r}
+airline_worst_top %>%
+  mutate(Label = paste(AirlineName, "->", AirportCode)) %>%
+  ggplot(aes(x = "", y = reorder(Label, MaxAvgDepDelay), fill = MaxAvgDepDelay)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(MaxAvgDepDelay, 1)), color = "black", size = 4) +
+  scale_fill_gradient(low = "#FEE5D9", high = "#CB181D") +
+  labs(
+    x = "",
+    y = "",
+    fill = "Avg Delay (min)",
+    title = "Worst Airport for Each Airline"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(face = "bold")  
+  )
+
+
+```
+
+---
+
+# Section 4: Cancellations
+
+This section examines the scale and causes of cancellations.
+
+![](Photos/flight_cancel.png){width=90% fig-align="center"}
+
+## Total Cancellations
+
+```{r cancellations-count}
+cancellations <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem06a.csv",
+                          show_col_types = FALSE)
+
+total_cancelled <- cancellations$NumCancelledFlights[1]
+
+total_flights_approx <- sum(day_patterns$NumFlights)
+cancel_rate <- (total_cancelled / total_flights_approx) * 100
+```
+
+::: {.callout-warning icon=false}
+## The Scale of Disruption
+
+**`r format(total_cancelled, big.mark = ",")` flights were cancelled in April 2019**
+
+- That's approximately **`r round(total_cancelled/30, 0)` cancellations per day**
+- Represents about **`r round(cancel_rate, 2)`%** of all scheduled flights
+:::
+
+```{r cancel-viz-simple}
+tibble(
+  Category = c("Completed Flights", "Cancelled Flights"),
+  Count = c(total_flights_approx - total_cancelled, total_cancelled)
+) %>%
+  ggplot(aes(x = Category, y = Count, fill = Category)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = comma(Count)),
+            vjust = -0.4, size = 4.5, fontface = "bold") +
+  scale_fill_manual(values = c(
+    "Completed Flights" = "#4C72B0",  
+    "Cancelled Flights" = "#C44E52"  
+  )) +
+  scale_y_continuous(labels = comma,
+                     expand = expansion(mult = c(0, 0.10))) +
+  labs(
+    x = "",
+    y = "Number of Flights"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    axis.text.x        = element_text(face = "bold")
+  )
+
+```
+
+## Cancellation Reasons
+
+```{r cancellation-reasons}
+cancel_reasons <- read_csv("SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problem06b.csv",
+                           show_col_types = FALSE)
+
+reason_summary <- cancel_reasons %>%
+  group_by(CancellationCode, Reason) %>%
+  summarise(Airports = n(), .groups = "drop") %>%
+  arrange(desc(Airports))
+```
+
+## Dominant Cancellation Reason Per Airport
+
+```{r}
+reason_summary %>%
+  ggplot(aes(x = reorder(Reason, Airports),
+             y = Airports,
+             fill = Reason)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = Airports),
+            hjust = -0.2,                    
+            size = 4.5,
+            fontface = "bold") +
+  coord_flip() +
+  scale_fill_manual(values = c(
+    "Weather"              = "#4C72B0",
+    "Carrier"              = "#C44E52",
+    "National Air System"  = "#55A868",
+    "Security"             = "#8172B3"
+  )) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = "Primary Cancellation Reasons by Airport Count",
+    x = "",
+    y = "Number of Airports",
+    fill = "Reason"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.y = element_text(face = "bold"),
+    panel.grid.major.y = element_blank(),
+    plot.title = element_text(face = "bold", size = 15)
+  )
+```
+
+::: {.callout-note icon=false}
+## Key Findings
+
+- **Weather dominates**: `r reason_summary$Airports[reason_summary$CancellationCode == "B"]` airports cite weather as the primary cancellation cause
+- **Carrier issues** are the leading cause at `r reason_summary$Airports[reason_summary$CancellationCode == "A"]` airports, representing controllable operational problems
+- **National Air System (NAS)** factors affect `r reason_summary$Airports[reason_summary$CancellationCode == "C"]` airports
+- April's spring weather patterns explain the weather-heavy cancellation profile
+- The geographic variation suggests localized weather vulnerability in certain regions
+:::
+
+```{r cancel-map-preview}
+cancel_reasons %>%
+  select(AirportName, CancellationCode, Reason, NumCancellations) %>%
+  head(10) %>%
+  kable(col.names = c("Airport Location", "Code", "Primary Reason", "# Cancellations"),
+        caption = "Sample: Dominant Cancellation Reason by Airport (First 10)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+# Conclusion
+
+### 1. Business Travel Dominates the Industry
+
+The pronounced Monday peak (106,575 flights) and Saturday trough demonstrate that **business travel, not leisure,**. This weekday-centric pattern shows airlines optimize for corporate travelers returning from weekends and beginning weekly business trips.
+
+### 2. Extreme Delays Reveal Operational vulnerabilities
+
+While most flights operate smoothly, the presence of **43+ hour delays** shows the huge gap between routine operations and worst-case scenarios highlighting the industry's vulnerability.
+
+### 3. Small Airports Face Disproportionate Challenges
+
+**Southwest Oregon Regional Airport's 47-minute average delay** . Smaller regional airports lack the infrastructure, redundancy, and resources to absorb disruptions, leading to persistent performance problems that affect every departure.
+
+### 4. Weather Remains the Uncontrollable Wild Card
+
+With weather being the dominant cancellation cause across the majority of airports, airlines face an operational reality that no amount of planning can fully overcome. However, **carrier-related cancellations represent controllable failures** where operational improvements could make a difference.
+
+
+## Recommendations
+
+### Operational Improvements
+
+1. **Target Problem Airports**: Direct resources to airports with chronic delay issues (OTH, etc.)
+2. **Weather Preparedness**: Enhance forecasting and contingency planning for April weather patterns
+3. **Schedule Buffer**: Build in realistic turnaround times to prevent cascading delays
+4. **Early Departure Controls**: Implement policies to prevent flights from leaving significantly ahead of schedule
+
+### Strategic Priorities
+
+1. **Business Traveler Focus**: Given Monday's dominance, optimize Monday operations and customer service
+2. **Regional Airport Support**: Invest in infrastructure or operational support for struggling smaller airports
+3. **Cancellation Transparency**: Provide clearer communication about cancellation causes and rebooking options
+4. **Data-Driven Resource Allocation**: Use airport-specific and airline-specific delay patterns to guide staffing and equipment deployment
+
+## Data Source & Methodology
+
+**Data Source**: U.S. Department of Transportation, Bureau of Transportation Statistics
+
+**Dataset**: Airline On-Time Performance and Causes of Delay
+
+**Time Period**: April 2019
+
+**Records Analyzed**: 600,000+ individual flight records
+
+**Analysis Tools**: SQL for data querying, R with ggplot2 for visualization
+
+**Source**: [https://www.transtats.bts.gov/](https://www.transtats.bts.gov/)

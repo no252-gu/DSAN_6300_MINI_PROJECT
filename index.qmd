@@ -1,0 +1,60 @@
+---
+title: "A Deep Dive into  U.S. Airline Performance"
+format:
+  html:
+    embed-resources: true
+---
+
+
+![](Photos/airplane_photo.jpg){width=90% fig-align="center"}
+
+## Overview
+
+Every day, thousands of flights crisscross American skies. Behind the routine of air travel lies a complex web of delays, cancellations, and operational challenges that affect millions of passengers annually.
+
+This project analyzes **April 2019 flight data** from the U.S. Department of Transportation to uncover patterns in airline performance, airport operations, and flight disruptions. Using over 600,000 flight records, we reveal when flights are most delayed, which airports struggle most with on-time performance, and what drives flight cancellations.
+
+
+## What Questions We're Answering
+
+This analysis addresses five critical questions about flights:
+
+### 1. **When do people fly?**
+
+### 2. **Which airlines have the most extreme delays?**
+
+### 3. **Which airports are the worst performers?**
+
+### 4. **Why do flights get cancelled?**
+
+
+## Project Structure
+
+**[Analysis](analysis.qmd)**: Read the full Analysis on the data.
+
+**[About](about.qmd)**: Learn about the data source, methodology, and project background
+
+
+## Quick Findings
+
+::: {.callout-note icon=false collapse="false"}
+## Top Insights
+
+**System Volume**: Monday is the busiest day with 106,575 flights; Saturday sees the lowest volume
+
+**Airline Delays**: Maximum delay recorded was 2,620 minutes (43+ hours); some flights departed 60 minutes early
+
+**Airport Performance**: Southwest Oregon Regional Airport averages 47-minute delays on every departure
+
+**Cancellations**: 14,488 flights cancelled in April 2019; weather is the dominant cause at most airports
+
+**Business Travel**: Pronounced weekday peaks show business travel, not leisure, drives the industry
+:::
+
+---
+
+**Data Source**: U.S. Department of Transportation, Bureau of Transportation Statistics
+
+**Dataset**: Airline On-Time Performance and Causes of Delay (April 2019)
+
+**Author**: Nkemdibe Okweye | DSAN 6300 Mini Project

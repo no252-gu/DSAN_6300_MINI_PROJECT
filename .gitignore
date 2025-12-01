@@ -1,0 +1,24 @@
+# Quarto
+/.quarto/
+# /_site/
+/.luarc.json
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*~
+*.tmp

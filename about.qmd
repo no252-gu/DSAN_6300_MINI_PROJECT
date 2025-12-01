@@ -1,0 +1,117 @@
+---
+title: "About This Project"
+---
+
+## Project Overview
+
+This website presents a comprehensive analysis of U.S. airline performance data, examining flight delays, cancellations, and operational patterns across airlines and airports. The project was completed as part of **DSAN 6300** coursework, demonstrating skills in:
+
+- Database design and SQL query development
+- Data analysis and statistical interpretation
+- Data visualization and storytelling
+
+## Data Source
+
+**Dataset**: Airline On-Time Performance and Causes of Delay
+
+**Provider**: U.S. Department of Transportation, Bureau of Transportation Statistics
+
+**Time Period**: April 2019
+
+**Records**: 600,000+ individual flight records
+
+The dataset includes detailed information about:
+
+- Flight dates, airlines, and routes
+- Departure and arrival times (scheduled vs. actual)
+- Delay durations and causes
+- Cancellation information and reasons
+- Airport and carrier identifiers
+
+**Official Source**: [https://www.transtats.bts.gov/](https://www.transtats.bts.gov/)
+
+## Methodology
+
+### Database Design
+
+The analysis utilized a dimensional data model with:
+
+- **Fact Table**: `al_perf` containing flight performance metrics
+- **Dimension Tables**:
+  - `L_AIRLINE_ID`: Airline names and codes
+  - `L_AIRPORT_ID` / `L_AIRPORT`: Airport identifiers and locations
+  - `L_WEEKDAYS`: Day of week mappings
+  - `L_CANCELATION`: Cancellation reason codes
+
+### Analysis Tools
+
+- **SQL**: PostgreSQL for data querying and aggregation
+- **R**: Data manipulation and visualization
+  - `tidyverse` for data wrangling
+  - `ggplot2` for visualization
+  - `kableExtra` for formatted tables
+- **Quarto**: Website generation and publishing
+
+
+## Key Findings Summary
+
+### System Volume
+- **106,575 flights** on the busiest day (Monday)
+- Clear weekday/weekend pattern driven by business travel
+- Daily volumes range from ~85,000 to ~107,000 flights
+
+### Delays
+- **Maximum delay**: 2,620 minutes (43+ hours)
+- **Southwest Oregon Regional (OTH)**: 47-minute average delay
+- Extreme variability between routine operations and worst-case scenarios
+
+### Cancellations
+- **14,488 flights cancelled** in April 2019
+- **Weather** is the dominant cause at most airports
+- Approximately 2% cancellation rate overall
+
+## Project Structure
+
+```
+DSAN_6300_MINI_PROJECT/
+├── index.qmd                  # Homepage
+├── analysis.qmd               # Full analysis with visualizations
+├── about.qmd                  # This page
+├── _quarto.yml                # Website configuration
+├── styles.css                 # Custom styling
+└── SQL_exports/               # Query results
+    ├── Problem01.csv          # Max delays by airline
+    ├── Problem02.csv          # Early departures
+    ├── Problem03.csv          # Day of week patterns
+    ├── Problem04.csv          # Worst airport overall
+    ├── Problem05.csv          # Worst airport per airline
+    ├── Problem06a.csv         # Cancellation counts
+    ├── Problem06b.csv         # Cancellation reasons
+    └── Problem07.csv          # Daily flight patterns
+```
+
+---
+
+## Author
+
+**Nkemdibe Okweye**
+Student, Data Science and Analytics (DSAN)
+Georgetown University
+
+**Course**: DSAN 6300 - Database Management
+**Semester**: Fall 2025
+
+---
+
+## Technologies Used
+
+- **MySQLWorkbench**: Database management and SQL queries
+- **R**: Statistical analysis and visualization
+- **Quarto**: Website creation and rendering
+- **GitHub Pages**: Website hosting and deployment
+- **ggplot2**: Data visualization
+- **tidyverse**: Data manipulation
+
+---
+
+*Last updated: `r format(Sys.Date(), "%B %d, %Y")`*
