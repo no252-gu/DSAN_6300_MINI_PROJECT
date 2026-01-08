@@ -515,3 +515,209 @@ With weather being the dominant cancellation cause across the majority of airpor
 **Analysis Tools**: SQL for data querying, R with ggplot2 for visualization
 
 **Source**: [https://www.transtats.bts.gov/](https://www.transtats.bts.gov/)
+
+---
+
+# SQL Queries
+
+This section documents the SQL queries used to extract and analyze the flight data from the database. Each query corresponds to a specific analysis question and feeds into the visualizations presented above.
+
+## Query 1: Maximum Departure Delays by Airline
+
+This query finds the worst departure delay for each airline and sorts results from smallest to largest.
+
+```sql
+SELECT l_ai_d.Name,
+       MAX(a.DepDelayMinutes) AS MaxDepDelay
+FROM al_perf AS a
+JOIN L_AIRLINE_ID AS l_ai_d
+  ON a.DOT_ID_Reporting_Airline = l_ai_d.ID
+GROUP BY l_ai_d.Name
+ORDER BY MaxDepDelay ASC;
+```
+
+**Results**: 17 airlines | **Used in**: Section 2 - Maximum Departure Delays
+
+---
+
+## Query 2: Maximum Early Departures by Airline
+
+This query identifies the earliest departures (in minutes) for each airline, sorted from largest to smallest early departure.
+
+```sql
+SELECT l_ai_d.Name,
+       -MIN(a.DepDelay) AS EarlyDep
+FROM al_perf AS a
+JOIN L_AIRLINE_ID AS l_ai_d
+  ON a.DOT_ID_Reporting_Airline = l_ai_d.ID
+GROUP BY l_ai_d.Name
+ORDER BY EarlyDep DESC;
+```
+
+**Results**: 17 airlines | **Used in**: Section 2 - Maximum Early Departures
+
+---
+
+## Query 3: Flight Volume by Day of Week
+
+This query ranks days of the week by total flight volume, with 1 being the busiest day.
+
+```sql
+SELECT l_w.Day AS DayOfWeek,
+       COUNT(*) AS NumFlights,
+       RANK() OVER (ORDER BY COUNT(*) DESC) AS FlightRank
+FROM al_perf AS a
+JOIN L_WEEKDAYS AS l_w
+  ON a.DayOfWeek = l_w.Code
+GROUP BY l_w.Day
+ORDER BY FlightRank ASC;
+```
+
+**Results**: 7 days | **Used in**: Section 1 - Flight Volume by Day of Week
+
+---
+
+## Query 4: Airport with Highest Average Departure Delay
+
+This query identifies the single worst-performing airport based on average departure delay (treating early departures as 0 delay).
+
+```sql
+SELECT l_a.Name,
+       l_a.Code AS Code,
+       AVG(a.DepDelayMinutes) AS AverageDepDelay
+FROM al_perf AS a
+JOIN L_AIRPORT AS l_a
+  ON a.Origin = l_a.Code
+GROUP BY l_a.Name, l_a.Code
+ORDER BY AverageDepDelay DESC
+LIMIT 1;
+```
+
+**Results**: 1 airport | **Used in**: Section 3 - Worst Performing Airport Overall
+
+---
+
+## Query 5: Worst Airport for Each Airline
+
+This query uses CTEs to find each airline's most problematic departure airport based on average delay.
+
+```sql
+WITH avg_delays AS (
+  SELECT a.DOT_ID_Reporting_Airline AS airline_id,
+         a.OriginAirportID AS airport_id,
+         AVG(a.DepDelayMinutes) AS avg_delay
+  FROM al_perf AS a
+  GROUP BY airline_id, airport_id
+),
+max_delays AS (
+  SELECT airline_id,
+         MAX(avg_delay) AS max_avg_delay
+  FROM avg_delays
+  GROUP BY airline_id
+)
+SELECT lairline.Name AS AirlineName,
+       lairport.Name AS AirportName,
+       md.max_avg_delay AS MaxAvgDepDelay
+FROM max_delays AS md
+JOIN avg_delays AS ad
+  ON md.airline_id = ad.airline_id
+ AND md.max_avg_delay = ad.avg_delay
+JOIN L_AIRLINE_ID AS lairline
+  ON ad.airline_id = lairline.ID
+JOIN L_AIRPORT_ID AS lairport
+  ON ad.airport_id = lairport.ID
+ORDER BY MaxAvgDepDelay DESC;
+```
+
+**Results**: 17 airline-airport combinations | **Used in**: Section 3 - Worst Airport for Each Airline
+
+---
+
+## Query 6a: Total Cancelled Flights
+
+This query counts the total number of cancelled flights in the dataset.
+
+```sql
+SELECT COUNT(*) AS NumCancelledFlights
+FROM al_perf
+WHERE Cancelled = 1;
+```
+
+**Results**: 14,488 cancelled flights | **Used in**: Section 4 - Total Cancellations
+
+---
+
+## Query 6b: Most Frequent Cancellation Reason by Airport
+
+This query identifies the primary cancellation reason at each departure airport.
+
+```sql
+WITH reason_counts AS (
+  SELECT OriginAirportID AS airport_id,
+         CancellationCode AS reason_code,
+         COUNT(*) AS num_cancellations
+  FROM al_perf
+  WHERE Cancelled = 1
+  GROUP BY airport_id, reason_code
+),
+max_counts AS (
+  SELECT airport_id,
+         MAX(num_cancellations) AS max_cancel
+  FROM reason_counts
+  GROUP BY airport_id
+)
+SELECT lairport.Name AS AirportName,
+       rc.reason_code AS CancellationCode,
+       lcancel.Reason,
+       rc.num_cancellations AS NumCancellations
+FROM reason_counts rc
+JOIN max_counts mc
+  ON rc.airport_id = mc.airport_id
+ AND rc.num_cancellations = mc.max_cancel
+JOIN L_AIRPORT_ID lairport
+  ON rc.airport_id = lairport.ID
+JOIN L_CANCELATION lcancel
+  ON rc.reason_code = lcancel.code
+ORDER BY NumCancellations DESC;
+```
+
+**Results**: 317 airports | **Used in**: Section 4 - Primary Drivers of Flight Cancellations
+
+---
+
+## Query 7: Daily Flights with 3-Day Rolling Average
+
+This query calculates a 3-day rolling average of flight volumes using a window function.
+
+```sql
+WITH daily_flights AS (
+  SELECT FlightDate,
+         COUNT(*) AS NumFlights
+  FROM al_perf
+  GROUP BY FlightDate
+)
+SELECT FlightDate,
+       NumFlights,
+       AVG(NumFlights) OVER (
+         ORDER BY FlightDate
+         ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING
+       ) AS AvgFlights_Preceding3Days
+FROM daily_flights
+ORDER BY FlightDate;
+```
+
+**Results**: 31 days | **Used in**: Section 1 - Daily Flights vs 3-Day Rolling Average
+
+---
+
+::: {.callout-tip icon=false}
+## Key SQL Techniques Used
+
+- **Window Functions**: `RANK() OVER` and `AVG() OVER` for rankings and rolling averages
+- **Common Table Expressions (CTEs)**: Multi-step queries for complex aggregations (Queries 5 & 6b)
+- **Multiple JOINs**: Connecting fact tables with lookup tables for readable results
+- **Aggregate Functions**: `MAX()`, `MIN()`, `AVG()`, `COUNT()` for summarization
+- **Conditional Filtering**: `WHERE Cancelled = 1` to isolate specific subsets
+:::
+
+**Full SQL Script**: All queries are available in `SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problems.sql`

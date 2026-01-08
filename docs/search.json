@@ -84,6 +84,62 @@
     "text": "Data Source & Methodology\nData Source: U.S. Department of Transportation, Bureau of Transportation Statistics\nDataset: Airline On-Time Performance and Causes of Delay\nTime Period: April 2019\nRecords Analyzed: 600,000+ individual flight records\nAnalysis Tools: SQL for data querying, R with ggplot2 for visualization\nSource: https://www.transtats.bts.gov/"
   },
   {
+    "objectID": "analysis.html#query-1-maximum-departure-delays-by-airline",
+    "href": "analysis.html#query-1-maximum-departure-delays-by-airline",
+    "title": "Analysis of Flight Data",
+    "section": "Query 1: Maximum Departure Delays by Airline",
+    "text": "Query 1: Maximum Departure Delays by Airline\nThis query finds the worst departure delay for each airline and sorts results from smallest to largest.\nSELECT l_ai_d.Name,\n       MAX(a.DepDelayMinutes) AS MaxDepDelay\nFROM al_perf AS a\nJOIN L_AIRLINE_ID AS l_ai_d\n  ON a.DOT_ID_Reporting_Airline = l_ai_d.ID\nGROUP BY l_ai_d.Name\nORDER BY MaxDepDelay ASC;\nResults: 17 airlines | Used in: Section 2 - Maximum Departure Delays"
+  },
+  {
+    "objectID": "analysis.html#query-2-maximum-early-departures-by-airline",
+    "href": "analysis.html#query-2-maximum-early-departures-by-airline",
+    "title": "Analysis of Flight Data",
+    "section": "Query 2: Maximum Early Departures by Airline",
+    "text": "Query 2: Maximum Early Departures by Airline\nThis query identifies the earliest departures (in minutes) for each airline, sorted from largest to smallest early departure.\nSELECT l_ai_d.Name,\n       -MIN(a.DepDelay) AS EarlyDep\nFROM al_perf AS a\nJOIN L_AIRLINE_ID AS l_ai_d\n  ON a.DOT_ID_Reporting_Airline = l_ai_d.ID\nGROUP BY l_ai_d.Name\nORDER BY EarlyDep DESC;\nResults: 17 airlines | Used in: Section 2 - Maximum Early Departures"
+  },
+  {
+    "objectID": "analysis.html#query-3-flight-volume-by-day-of-week",
+    "href": "analysis.html#query-3-flight-volume-by-day-of-week",
+    "title": "Analysis of Flight Data",
+    "section": "Query 3: Flight Volume by Day of Week",
+    "text": "Query 3: Flight Volume by Day of Week\nThis query ranks days of the week by total flight volume, with 1 being the busiest day.\nSELECT l_w.Day AS DayOfWeek,\n       COUNT(*) AS NumFlights,\n       RANK() OVER (ORDER BY COUNT(*) DESC) AS FlightRank\nFROM al_perf AS a\nJOIN L_WEEKDAYS AS l_w\n  ON a.DayOfWeek = l_w.Code\nGROUP BY l_w.Day\nORDER BY FlightRank ASC;\nResults: 7 days | Used in: Section 1 - Flight Volume by Day of Week"
+  },
+  {
+    "objectID": "analysis.html#query-4-airport-with-highest-average-departure-delay",
+    "href": "analysis.html#query-4-airport-with-highest-average-departure-delay",
+    "title": "Analysis of Flight Data",
+    "section": "Query 4: Airport with Highest Average Departure Delay",
+    "text": "Query 4: Airport with Highest Average Departure Delay\nThis query identifies the single worst-performing airport based on average departure delay (treating early departures as 0 delay).\nSELECT l_a.Name,\n       l_a.Code AS Code,\n       AVG(a.DepDelayMinutes) AS AverageDepDelay\nFROM al_perf AS a\nJOIN L_AIRPORT AS l_a\n  ON a.Origin = l_a.Code\nGROUP BY l_a.Name, l_a.Code\nORDER BY AverageDepDelay DESC\nLIMIT 1;\nResults: 1 airport | Used in: Section 3 - Worst Performing Airport Overall"
+  },
+  {
+    "objectID": "analysis.html#query-5-worst-airport-for-each-airline",
+    "href": "analysis.html#query-5-worst-airport-for-each-airline",
+    "title": "Analysis of Flight Data",
+    "section": "Query 5: Worst Airport for Each Airline",
+    "text": "Query 5: Worst Airport for Each Airline\nThis query uses CTEs to find each airline’s most problematic departure airport based on average delay.\nWITH avg_delays AS (\n  SELECT a.DOT_ID_Reporting_Airline AS airline_id,\n         a.OriginAirportID AS airport_id,\n         AVG(a.DepDelayMinutes) AS avg_delay\n  FROM al_perf AS a\n  GROUP BY airline_id, airport_id\n),\nmax_delays AS (\n  SELECT airline_id,\n         MAX(avg_delay) AS max_avg_delay\n  FROM avg_delays\n  GROUP BY airline_id\n)\nSELECT lairline.Name AS AirlineName,\n       lairport.Name AS AirportName,\n       md.max_avg_delay AS MaxAvgDepDelay\nFROM max_delays AS md\nJOIN avg_delays AS ad\n  ON md.airline_id = ad.airline_id\n AND md.max_avg_delay = ad.avg_delay\nJOIN L_AIRLINE_ID AS lairline\n  ON ad.airline_id = lairline.ID\nJOIN L_AIRPORT_ID AS lairport\n  ON ad.airport_id = lairport.ID\nORDER BY MaxAvgDepDelay DESC;\nResults: 17 airline-airport combinations | Used in: Section 3 - Worst Airport for Each Airline"
+  },
+  {
+    "objectID": "analysis.html#query-6a-total-cancelled-flights",
+    "href": "analysis.html#query-6a-total-cancelled-flights",
+    "title": "Analysis of Flight Data",
+    "section": "Query 6a: Total Cancelled Flights",
+    "text": "Query 6a: Total Cancelled Flights\nThis query counts the total number of cancelled flights in the dataset.\nSELECT COUNT(*) AS NumCancelledFlights\nFROM al_perf\nWHERE Cancelled = 1;\nResults: 14,488 cancelled flights | Used in: Section 4 - Total Cancellations"
+  },
+  {
+    "objectID": "analysis.html#query-6b-most-frequent-cancellation-reason-by-airport",
+    "href": "analysis.html#query-6b-most-frequent-cancellation-reason-by-airport",
+    "title": "Analysis of Flight Data",
+    "section": "Query 6b: Most Frequent Cancellation Reason by Airport",
+    "text": "Query 6b: Most Frequent Cancellation Reason by Airport\nThis query identifies the primary cancellation reason at each departure airport.\nWITH reason_counts AS (\n  SELECT OriginAirportID AS airport_id,\n         CancellationCode AS reason_code,\n         COUNT(*) AS num_cancellations\n  FROM al_perf\n  WHERE Cancelled = 1\n  GROUP BY airport_id, reason_code\n),\nmax_counts AS (\n  SELECT airport_id,\n         MAX(num_cancellations) AS max_cancel\n  FROM reason_counts\n  GROUP BY airport_id\n)\nSELECT lairport.Name AS AirportName,\n       rc.reason_code AS CancellationCode,\n       lcancel.Reason,\n       rc.num_cancellations AS NumCancellations\nFROM reason_counts rc\nJOIN max_counts mc\n  ON rc.airport_id = mc.airport_id\n AND rc.num_cancellations = mc.max_cancel\nJOIN L_AIRPORT_ID lairport\n  ON rc.airport_id = lairport.ID\nJOIN L_CANCELATION lcancel\n  ON rc.reason_code = lcancel.code\nORDER BY NumCancellations DESC;\nResults: 317 airports | Used in: Section 4 - Primary Drivers of Flight Cancellations"
+  },
+  {
+    "objectID": "analysis.html#query-7-daily-flights-with-3-day-rolling-average",
+    "href": "analysis.html#query-7-daily-flights-with-3-day-rolling-average",
+    "title": "Analysis of Flight Data",
+    "section": "Query 7: Daily Flights with 3-Day Rolling Average",
+    "text": "Query 7: Daily Flights with 3-Day Rolling Average\nThis query calculates a 3-day rolling average of flight volumes using a window function.\nWITH daily_flights AS (\n  SELECT FlightDate,\n         COUNT(*) AS NumFlights\n  FROM al_perf\n  GROUP BY FlightDate\n)\nSELECT FlightDate,\n       NumFlights,\n       AVG(NumFlights) OVER (\n         ORDER BY FlightDate\n         ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING\n       ) AS AvgFlights_Preceding3Days\nFROM daily_flights\nORDER BY FlightDate;\nResults: 31 days | Used in: Section 1 - Daily Flights vs 3-Day Rolling Average\n\n\n\n\n\n\n\nKey SQL Techniques Used\n\n\n\n\nWindow Functions: RANK() OVER and AVG() OVER for rankings and rolling averages\nCommon Table Expressions (CTEs): Multi-step queries for complex aggregations (Queries 5 & 6b)\nMultiple JOINs: Connecting fact tables with lookup tables for readable results\nAggregate Functions: MAX(), MIN(), AVG(), COUNT() for summarization\nConditional Filtering: WHERE Cancelled = 1 to isolate specific subsets\n\n\n\nFull SQL Script: All queries are available in SQL_exports/Nkemdibe_Okweye_no252_Mini_Project_Problems.sql"
+  },
+  {
     "objectID": "index.html#overview",
     "href": "index.html#overview",
     "title": "A Deep Dive into U.S. Airline Performance",
